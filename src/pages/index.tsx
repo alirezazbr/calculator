@@ -1,37 +1,114 @@
 import React, { useState } from 'react';
-import { Button } from '../components';
-import { Box, Grid, Input, Table, TableBody, TableCell, TableContainer, TableRow, Paper } from '@mui/material';
 import { SignalWifiOff, NetworkCell } from '@mui/icons-material';
+import {
+    Box, Grid, Input, Table, TableBody,
+    TableCell, TableContainer, TableRow, Paper
+} from '@mui/material';
 
-function createData(
-    item1: any,
-    item2: any,
-    item3: any,
-    item4: any,
-  ) {
+import { Button } from '../components';
+import {
+    Sum,
+    Minus,
+    Divide,
+    Square,
+    Fraction,
+    Multiply,
+    MainOperator,
+} from '../helper';
+
+function createData(item1: any, item2: any, item3: any, item4: any) {
     return { item1, item2, item3, item4 };
   }
 
 const rows = [
-    createData('AC', 'M', '%', '/'),
+    createData('AC', '1/m', '^2', '/'),
     createData(7, 8, 9, 'x'),
     createData(4, 5, 6, '-'),
     createData(1, 2, 3, '+'),
     createData(0, null, '.', '='),
-  ];
-const LandingPage = () => {
-    const [value, setValue] = useState('0');
-    console.log("🚀 ~ file: index.tsx ~ line 24 ~ LandingPage ~ value", value)
+];
 
-    const calculate = (num: any) => {
-        if (!isNaN(num) || num === '.') setValue(value + num);
+const operatorsSymbol = ['1/m', '^2', '/', '+', '-', 'x'];
+
+const operatorFunc: any = {
+    '+': Sum,
+    '-': Minus,
+    '/': Divide,
+    'x': Multiply,
+};
+
+const LandingPage = () => {
+    const [num1, setNum1] = useState(0);
+    const [value, setValue] = useState('');
+    const [result, setResult] = useState('');
+    const [operator, setOperator] = useState('');
+
+    const padTo2Digits = (num: number) => {
+        return String(num).padStart(2, '0');
+    }
+
+    const now = new Date();
+    const current = `${padTo2Digits(now.getHours())} : ${padTo2Digits(now.getMinutes())}`;
+
+
+    const calculate = (val: string) => {
+        setOperator(val);
+        let res = 0;
+
+        if (val === '^2') {
+            res = Square(+value);
+            setNum1(res);
+            setResult(res.toString());
+        } else if (val === '1/m') {
+            res = Fraction(+value);
+            setNum1(res);
+            setResult(res.toString());
+        } else {
+            res = MainOperator(
+                val,
+                result,
+                +value,
+                setNum1,
+                setResult,
+                num1,
+                operatorFunc[val]
+            );
+        }
+
+        return res;
+    };
+
+    const initial = (val: any) => {
+        if (!isNaN(val) || val === '.') setValue(value + val);
+
+        if (val === 'AC') {
+            if (+value !== 0) {
+                setValue('');
+            } else {
+                setResult('');
+                setOperator('');
+            }
+        }
+
+        if (operatorsSymbol.includes(val)) calculate(val);
+
+        if (val === '=') {
+            if (!result) {
+                setNum1(+value);
+                setResult(value + ' = ');
+            } else {
+                const equalRes = calculate(operator);
+                setResult(`${num1} ${operator} ${value} =`);
+                setValue(equalRes.toString());
+            }
+        }
     }
 
     return (
         <Box component={'section'}>
             <Grid
-                xs={8}
                 item
+                xs={8}
                 container 
                 display={'flex'} 
                 alignItems={'center'} 
@@ -42,28 +119,27 @@ const LandingPage = () => {
                     xs={12}
                     item
                     sx={{
-                        borderRadius: 20,
-                        backgroundColor: 'black',
-                        height: 600,
-                        maxWidth: '320px !important',
                         border: 2,
-                        borderColor: '#89a5b4',
+                        height: 600,
                         p: '35px 15px',
-                        boxSizing: 'border-box',
+                        borderRadius: 20,
                         position: 'relative',
+                        borderColor: '#89a5b4',
+                        boxSizing: 'border-box',
+                        backgroundColor: 'black',
+                        maxWidth: '320px !important',
                     }}
                 >
                     {/* header */}
                     <Grid item xs={12} display={'flex'} justifyContent={'space-between'} sx={{
-                        // backgroundColor: 'red',
-                        height: '20px',
-                        position: 'absolute',
                         top: '8px',
                         left: '50%',
+                        height: '20px',
+                        position: 'absolute',
                         width: 'calc(100% - 103px)',
                         transform: 'translateX(-50%)',
                     }}>
-                        <Grid item xs={4} sx={{ color: '#fff' }}>9:12</Grid>
+                        <Grid item xs={4} sx={{ color: '#fff' }}>{current}</Grid>
                         <Grid item xs={4} display={'flex'} alignItems={'center'}>
                             <Grid item xs={10} sx={{ height: '5px', backgroundColor: '#ccc', borderRadius: '10px', m: '0 auto' }} />
                         </Grid>
@@ -80,20 +156,19 @@ const LandingPage = () => {
 
                     {/* main */}
                     <Grid item xs={12} display={'flex'} flexDirection={'column'} sx={{
-                        // backgroundColor: 'white',
                         height: '100%',
                         borderRadius: '35px',
                     }}>
                         <Grid item xs={12} sx={{
-                            maxHeight: '140px',
-                            borderRadius: '35px 35px 0 0',
-                            p: '20px 20px 10px',
                             color: '#fff',
+                            maxHeight: '140px',
+                            p: '20px 20px 10px',
+                            borderRadius: '35px 35px 0 0',
                         }}>
-                            <Grid item xs={12} sx={{ height: '40px', fontSize: '20px' }}>123</Grid>
+                            <Grid item xs={12} sx={{ height: '40px', fontSize: '20px' }}>{result}</Grid>
                             <Grid item xs={12} display={'flex'} alignItems={'center'} sx={{ height: '70px' }}>
                                 <Input
-                                    value={value}
+                                    value={value || '0'}
                                     sx={{ width: '100%', height: '100%', color: '#fff', fontSize: '26px', fontWeight: 600, border: 0, backgroundColor: 'transparent' }}
                                 />
                             </Grid>
@@ -105,22 +180,28 @@ const LandingPage = () => {
                                 {rows.map((row) => (
                                     <TableRow key={row.item1} >
                                         <TableCell align="center" sx={{ p: 0, border: 0 }}>
-                                            <Button onClick={() => calculate(row.item1)} variant='contained' sx={{ backgroundColor: (!isNaN(row.item1)) ? '#313131' : '#a0a0a0', height: '55px', width: '55px', borderRadius: '50%', minWidth: 'unset !important', fontSize: '24px', fontWeight: 100 }}>{row.item1}</Button>
+                                            <Button
+                                                onClick={() => initial(row.item1)} 
+                                                variant='contained' 
+                                                sx={{ backgroundColor: (!isNaN(row.item1)) ? '#313131' : '#a0a0a0' }}
+                                            >
+                                                {row.item1}
+                                            </Button>
                                         </TableCell>
 
                                         {
                                             row.item2 ? (
                                                 <TableCell align="center" sx={{ p: 0, border: 0 }}>
-                                                    <Button onClick={() => calculate(row.item2)} variant='contained' sx={{ backgroundColor: (!isNaN(row.item2)) ? '#313131' : '#a0a0a0', height: '55px', width: '55px', borderRadius: '50%', minWidth: 'unset !important', fontSize: '24px', fontWeight: 100 }}>{row.item2}</Button>
+                                                    <Button onClick={() => initial(row.item2)} variant='contained' sx={{ backgroundColor: (!isNaN(row.item2)) ? '#313131' : '#a0a0a0' }}>{row.item2 === '1/m' ? (<p style={{ fontSize: '19px' }}>1/m</p>) : row.item3}</Button>
                                                 </TableCell>
                                             ) : <TableCell align="center" sx={{ p: 0, border: 0 }} />
                                         }
                                         
                                         <TableCell align="center" sx={{ p: 0, border: 0 }}>
-                                            <Button onClick={() => calculate(row.item3)} variant='contained' sx={{ backgroundColor: (!isNaN(row.item3) || row.item3 === '.') ? '#313131' : '#a0a0a0', height: '55px', width: '55px', borderRadius: '50%', minWidth: 'unset !important', fontSize: '24px', fontWeight: 100 }}>{row.item3}</Button>
+                                            <Button onClick={() => initial(row.item3)} variant='contained' sx={{ backgroundColor: (!isNaN(row.item3) || row.item3 === '.') ? '#313131' : '#a0a0a0' }}>{row.item3 === '^2' ? (<p>&#13217;</p>) : row.item3}</Button>
                                         </TableCell>
                                         <TableCell align="center" sx={{ p: 0, border: 0 }}>
-                                            <Button variant='contained' sx={{ backgroundColor: '#f69a06', height: '55px', width: '55px', borderRadius: '50%', minWidth: 'unset !important', fontSize: '24px', fontWeight: 100 }}>{row.item4}</Button>
+                                            <Button onClick={() => initial(row.item4)} variant='contained' sx={{ backgroundColor: '#f69a06' }}>{row.item4}</Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
